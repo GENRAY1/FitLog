@@ -1,6 +1,6 @@
 # FitLog
 
-Fullstack-монорепа: мобильное/веб-приложение (Expo) и REST API (ASP.NET Core).
+FitLog — fullstack-приложение «дневник тренировок». Монорепа: клиент для iOS, Android и web (Expo) и REST API (ASP.NET Core).
 
 ## Карта репозитория
 
@@ -9,8 +9,6 @@ Fullstack-монорепа: мобильное/веб-приложение (Expo
 | `backend/` | ASP.NET Core Web API, .NET 10, решение `FitLog.sln` | `backend/CLAUDE.md` |
 | `frontend/` | Expo (React Native + Expo Router), TypeScript | `frontend/CLAUDE.md` |
 | `sessions/` | Журнал рабочих сессий (не код приложения) | `sessions/README.md` |
-
-Работая в одной части, не трогай другую без необходимости. Команды запускай из папки соответствующего проекта (`cd backend` / `cd frontend`), а не из корня.
 
 ## Общие соглашения
 
