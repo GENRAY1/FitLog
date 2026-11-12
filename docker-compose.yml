@@ -1,5 +1,5 @@
-# Инфраструктура для разработки: PostgreSQL (общий контейнер) + Keycloak.
-# Backend и frontend запускаются на хосте, в compose их нет.
+# Инфраструктура для разработки: PostgreSQL (общий контейнер) + Keycloak + backend API.
+# Frontend запускается на хосте, в compose его нет.
 # Переменные берутся из `.env` (шаблон: `.env.example`). Инструкция: docs/infrastructure.md
 name: fitlog
 
@@ -44,12 +44,15 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Задайте KC_BOOTSTRAP_ADMIN_PASSWORD в .env}
       # Один фиксированный публичный адрес: от него зависит claim `iss` в токенах.
-      KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080}
+      KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:5001}
+      # Backchannel-адреса (jwks_uri, token_endpoint) в discovery берутся из хоста запроса: контейнер backend
+      # ходит на http://keycloak:8080, а `issuer` остаётся публичным (KC_HOSTNAME).
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HTTP_ENABLED: "true"
       # Management-порт 9000 с /health/ready нужен для healthcheck.
       KC_HEALTH_ENABLED: "true"
     ports:
-      - "${KC_BIND:-127.0.0.1}:${KC_PORT:-8080}:8080"
+      - "${KC_BIND:-127.0.0.1}:${KC_PORT:-5001}:8080"
     volumes:
       # Импорт выполняется только если realm `fitlog` ещё не существует.
       - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
@@ -65,6 +68,44 @@ services:
       timeout: 5s
       retries: 15
       start_period: 40s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: FitLog.Host/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      # Development: Swagger и авто-применение миграций. Для production не подходит.
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Users: Host=postgres;Port=5432;Database=fitlog_users;Username=fitlog;Password=${FITLOG_DB_PASSWORD:?Задайте FITLOG_DB_PASSWORD в .env}
+      # Authority (и `iss`) публичный, как у клиентов на хосте; discovery забираем по внутреннему адресу,
+      # так как localhost внутри контейнера — не Keycloak.
+      Authentication__Oidc__Authority: ${KC_HOSTNAME:-http://localhost:5001}/realms/fitlog
+      Authentication__Oidc__MetadataAddress: http://keycloak:8080/realms/fitlog/.well-known/openid-configuration
+      Authentication__Oidc__SwaggerAuthorizationEndpoint: ${KC_HOSTNAME:-http://localhost:5001}/realms/fitlog/protocol/openid-connect/auth
+      Authentication__Oidc__SwaggerTokenEndpoint: ${KC_HOSTNAME:-http://localhost:5001}/realms/fitlog/protocol/openid-connect/token
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-5000}:8080"
+    healthcheck:
+      # В образе aspnet нет curl, а /bin/sh (dash) не умеет /dev/tcp, поэтому явно bash.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080 &&
+          printf 'GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q 'Healthy' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   pgdata:

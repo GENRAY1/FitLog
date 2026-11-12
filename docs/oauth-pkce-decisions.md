@@ -4,7 +4,7 @@
 
 ## Общие
 
-- **Единый адрес Keycloak:** `http://localhost:8080` для web, Swagger, backend и Android (эмулятор через `adb reverse tcp:8080` и `tcp:5084`, не `10.0.2.2`). `iss` = `<KC_HOSTNAME>/realms/fitlog`, Authority backend и `EXPO_PUBLIC_OIDC_AUTHORITY` должны совпадать с ним.
+- **Единый адрес Keycloak:** `http://localhost:5001` для web, Swagger, backend и Android (эмулятор через `adb reverse tcp:5001` и `tcp:5000`, не `10.0.2.2`). `iss` = `<KC_HOSTNAME>/realms/fitlog`, Authority backend и `EXPO_PUBLIC_OIDC_AUTHORITY` должны совпадать с ним.
 - **Audience:** backend проверяет `aud = fitlog-api` (его добавляет mapper `fitlog-api-audience` в клиентах).
 - **Схема мобильного приложения:** сменить `frontend` на `fitlog` в `frontend/app.json` (этап C). Затрагивает нативную часть `android/`, пересборку dev build делает разработчик. Redirect `fitlog://*` в realm уже есть.
 - **Ротация refresh token** (`revokeRefreshToken`): после каждого refresh сохранять новый токен, параллельные refresh недопустимы.

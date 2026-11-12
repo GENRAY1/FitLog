@@ -28,7 +28,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-REALM_URL = os.environ.get("KC_REALM_URL", "http://localhost:8080/realms/fitlog")
+REALM_URL = os.environ.get("KC_REALM_URL", "http://localhost:5001/realms/fitlog")
 OIDC = f"{REALM_URL}/protocol/openid-connect"
 EMAIL_PREFIX = "dev-token-"
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

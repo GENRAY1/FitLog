@@ -17,6 +17,14 @@ public sealed class OidcOptions
     [Required(AllowEmptyStrings = false)]
     public string Authority { get; init; } = "";
 
+    /// <summary>
+    /// Адрес discovery-документа (<c>/.well-known/openid-configuration</c>), по которому backend забирает настройки и ключи.
+    /// Задаётся явно, так как может отличаться от <see cref="Authority"/> (например, в контейнере, где <c>localhost</c>
+    /// указывает не на сервер авторизации). Издатель токенов берётся из самого документа и должен совпадать с <c>iss</c>.
+    /// </summary>
+    [Required(AllowEmptyStrings = false)]
+    public string MetadataAddress { get; init; } = "";
+
     /// <summary>Ожидаемое значение claim <c>aud</c>.</summary>
     [Required(AllowEmptyStrings = false)]
     public string Audience { get; init; } = "";

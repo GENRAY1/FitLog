@@ -28,6 +28,7 @@ public static class AuthenticationExtensions
                 var settings = oidc.Value;
 
                 jwt.Authority = settings.Authority;
+                jwt.MetadataAddress = settings.MetadataAddress;
                 jwt.RequireHttpsMetadata = settings.RequireHttpsMetadata;
 
                 // Claims остаются с именами из JWT (sub, email и т. д.), а не переименовываются в ClaimTypes.*.
