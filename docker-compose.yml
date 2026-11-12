@@ -1,0 +1,70 @@
+# Инфраструктура для разработки: PostgreSQL (общий контейнер) + Keycloak.
+# Backend и frontend запускаются на хосте, в compose их нет.
+# Переменные берутся из `.env` (шаблон: `.env.example`). Инструкция: docs/infrastructure.md
+name: fitlog
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}
+      # Следующие переменные читает только init-скрипт (docker/postgres/init).
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Задайте KEYCLOAK_DB_PASSWORD в .env}
+      FITLOG_DB_PASSWORD: ${FITLOG_DB_PASSWORD:?Задайте FITLOG_DB_PASSWORD в .env}
+      FITLOG_MODULE_DBS: ${FITLOG_MODULE_DBS:-fitlog_users}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # В образе PostgreSQL 18+ данные лежат в версионированном подкаталоге
+      # /var/lib/postgresql/<major>/, поэтому volume монтируется в /var/lib/postgresql.
+      - pgdata:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    restart: unless-stopped
+    # start-dev: режим разработки (HTTP, без строгого hostname). Для production не подходит.
+    command: ["start-dev", "--import-realm"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Задайте KEYCLOAK_DB_PASSWORD в .env}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Задайте KC_BOOTSTRAP_ADMIN_PASSWORD в .env}
+      # Один фиксированный публичный адрес: от него зависит claim `iss` в токенах.
+      KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8080}
+      KC_HTTP_ENABLED: "true"
+      # Management-порт 9000 с /health/ready нужен для healthcheck.
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KC_BIND:-127.0.0.1}:${KC_PORT:-8080}:8080"
+    volumes:
+      # Импорт выполняется только если realm `fitlog` ещё не существует.
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    healthcheck:
+      # В образе нет curl, поэтому HTTP-запрос через /dev/tcp.
+      test:
+        - CMD-SHELL
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
+volumes:
+  pgdata:
