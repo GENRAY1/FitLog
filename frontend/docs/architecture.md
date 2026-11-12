@@ -7,7 +7,7 @@
 - Платформы: iOS, Android, web.
 - Данные с сервера: TanStack Query + axios.
 - Клиентское состояние: Zustand.
-- UI и дизайн-система: React Native Paper
+- UI и дизайн-система: React Native Paper 5 (MD3) + `@expo/vector-icons` для иконок. Проверочный экран: `/paper-demo`.
 
 ## Структура (feature-based)
 
@@ -51,7 +51,6 @@ src/
 
 ## Открытые решения
 
-- Совместимость Paper с Expo SDK 58 / RN 0.88 и React Compiler: проверить при установке 
 - Аутентификация и защита маршрутов.
 - Хранение на устройстве, оффлайн.
 - Типы из OpenAPI: вручную или генерация.
