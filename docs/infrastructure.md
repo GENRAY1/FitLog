@@ -30,8 +30,7 @@ docker compose up -d --wait
 - Правило архитектуры «своя БД на модуль»: на каждый модуль backend отдельная база `fitlog_<module>`. Таблицы Keycloak и приложения не смешиваются.
 - У каждой базы отозвано `CONNECT` у `PUBLIC`: роль `keycloak` не может подключиться к базам приложения и наоборот. Названия баз при этом видны в `\l` всем ролям (так устроен каталог PostgreSQL), закрыт именно доступ.
 - Скрипт выполняется **только на пустом volume**. Чтобы добавить базу позже: создать вручную (`CREATE DATABASE fitlog_workouts OWNER fitlog; REVOKE ALL ON DATABASE fitlog_workouts FROM PUBLIC;`) или пересоздать volume (`down -v`, данные будут потеряны).
-- Строка подключения модуля Users для backend (кладётся в user-secrets, не в репозиторий):
-  `Host=localhost;Port=5432;Database=fitlog_users;Username=fitlog;Password=<FITLOG_DB_PASSWORD>`.
+- Строка подключения модуля Users для backend лежит в `backend/FitLog.Host/appsettings.Development.json` (`ConnectionStrings:Users`, вместе с dev-паролем). Пароль в ней должен совпадать с `FITLOG_DB_PASSWORD` из `.env`: при смене пароля обновите оба места и пересоздайте volume (`down -v`). Формат: `Host=localhost;Port=5432;Database=fitlog_users;Username=fitlog;Password=<FITLOG_DB_PASSWORD>`. В других средах задаётся переменной окружения `ConnectionStrings__Users`.
 - Образ PostgreSQL 18: volume монтируется в `/var/lib/postgresql` (в ≤17 было `/var/lib/postgresql/data`).
 
 ## Realm `fitlog`
@@ -70,7 +69,7 @@ Backend сверяет `iss` токена с настройкой Authority, п�
 
 Почему не `10.0.2.2`: браузер на хосте не откроет `10.0.2.2`, а `iss` у web и Android разошёлся бы. Кроме того, Keycloak ставит cookies с флагом `Secure` даже по HTTP, а браузеры принимают такие cookies по HTTP только для `localhost`: при LAN-адресе по HTTP вход через браузер, скорее всего, не заработает (в этой конфигурации не проверялось).
 
-**Физическое устройство по Wi-Fi** (без `adb reverse`): в `.env` задать `KC_BIND=0.0.0.0` и `KC_HOSTNAME=http://<LAN IP>:8080`, затем везде (backend Authority, `EXPO_PUBLIC_KEYCLOAK_URL`) использовать тот же адрес. Из-за `Secure` cookies может понадобиться HTTPS. Подключение по USB с `adb reverse` проще и надёжнее.
+**Физическое устройство по Wi-Fi** (без `adb reverse`): в `.env` задать `KC_BIND=0.0.0.0` и `KC_HOSTNAME=http://<LAN IP>:8080`, затем везде (backend Authority, `EXPO_PUBLIC_OIDC_AUTHORITY`) использовать тот же адрес. Из-за `Secure` cookies может понадобиться HTTPS. Подключение по USB с `adb reverse` проще и надёжнее.
 
 ## Ограничения dev-конфигурации и что отложено
 

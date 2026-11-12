@@ -1,0 +1,17 @@
+<Project>
+
+    <!-- Версии пакетов задаются только здесь, в .csproj указывается PackageReference без Version. -->
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageVersion Include="EFCore.NamingConventions" Version="10.0.1" />
+        <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.15" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15" />
+        <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+        <PackageVersion Include="Swashbuckle.AspNetCore" Version="11.0.0" />
+    </ItemGroup>
+
+</Project>

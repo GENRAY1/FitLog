@@ -7,6 +7,7 @@
 - .NET 10, C# (`Nullable`, `ImplicitUsings`), ASP.NET Core Web API на контроллерах.
 - PostgreSQL, EF Core + Npgsql.
 - Swagger (Swashbuckle).
+- Аутентификация: JWT от сервера авторизации по стандарту OpenID Connect (JwtBearer).
 - Пакеты централизованно: `Directory.Packages.props`, `Directory.Build.props`.
 
 ## Структура
@@ -14,26 +15,27 @@
 ```
 backend/
   FitLog.Host/            # Program.cs, подключение модулей, Swagger, middleware, ошибки, логирование
+    Auth/                 # JwtBearer + OIDC-сервер авторизации, политики авторизации (технический код, без бизнес-логики)
+    Swagger/              # Swashbuckle и OAuth2-схема
   FitLog.Shared/
     Modules/<Module>/     # публичный контракт модуля
       Abstractions/       # I<Module>Module.cs
       Types/Dtos/         # DTO для вызовов между модулями
     Common/               # общее для всех модулей
-    Infrastructure/       # реализации общих технических сервисов (если надо)
+    Infrastructure/       # реализации общих технических сервисов 
     DependencyInjection.cs
   FitLog.<Module>/        # например, FitLog.Workouts
     Entities/             # сущности БД
     Controllers/          # контроллеры модуля
+    Abstractions/         # интерфейсы
+    Services/             # реализации сервисов
+    Types/
       Contracts/          # Request/Response контроллеров
-    Features/<Feature>/
-      Abstractions/       # интерфейсы сервисов
-      Services/           # реализации
-      Types/
-        Dtos/             # DTO сервисов
+      Dtos/               # DTO 
     Infrastructure/
       DataAccess/         # DatabaseContext, Configurations/, Migrations/, SeedingData/
       ExternalApis/       # клиенты сторонних API
-    Common/               # общее для фич модуля
+    Common/               # общее для модуля 
     DependencyInjection.cs  # Add<Module>(services, configuration)
 ```
 
@@ -66,11 +68,13 @@ backend/
 - Контроллеры тонкие: разобрать запрос, вызвать сервис, вернуть результат.
 - Сущности БД в ответах API не использовать. DTO сервиса и контракт контроллера разные типы.
 
+**Исключения**
+- Сообщения для всех типов исключений пишутся на английском
+
 ## Открытые решения
 
 - Обработка ошибок (Result или исключения).
 - Применение миграций в dev и prod.
-- Аутентификация и авторизация.
 - Тесты.
 - Версионирование API.
 - Логирование.
